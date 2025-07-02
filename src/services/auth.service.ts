@@ -140,4 +140,38 @@ export class AuthService {
     // Update password
     await this.userRepository.update(userId, { password: hashedNewPassword });
   }
+
+  async testDatabaseConnection(): Promise<any> {
+    try {
+      this.logger.log('🔍 Testing database connection...');
+      
+      // Test basic query
+      const result = await this.userRepository.query('SELECT 1 as test');
+      this.logger.log('✅ Database query successful:', result);
+      
+      // Test if users table exists and accessible
+      const userCount = await this.userRepository.count();
+      this.logger.log(`👥 User count: ${userCount}`);
+      
+      // Test environment variables
+      const envVars = {
+        NODE_ENV: process.env.NODE_ENV,
+        DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'MISSING',
+        JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'MISSING'
+      };
+      this.logger.log('🔐 Environment variables:', envVars);
+      
+      return {
+        status: 'success',
+        database: 'connected',
+        userCount,
+        envVars,
+        timestamp: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      this.logger.error('💥 Database test failed:', error);
+      throw error;
+    }
+  }
 } 

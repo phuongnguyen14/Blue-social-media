@@ -17,4 +17,5 @@ export declare class AuthService {
     }>;
     validateUser(userId: string): Promise<User>;
     changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<void>;
+    testDatabaseConnection(): Promise<any>;
 }

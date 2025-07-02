@@ -23,6 +23,9 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
+    async healthCheck() {
+        return await this.authService.testDatabaseConnection();
+    }
     async register(registerDto) {
         return await this.authService.register(registerDto);
     }
@@ -39,6 +42,13 @@ let AuthController = class AuthController {
     }
 };
 exports.AuthController = AuthController;
+__decorate([
+    (0, common_1.Get)('health'),
+    (0, swagger_1.ApiOperation)({ summary: 'Database health check' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "healthCheck", null);
 __decorate([
     (0, common_1.Post)('register'),
     (0, swagger_1.ApiOperation)({ summary: 'Đăng ký tài khoản mới' }),

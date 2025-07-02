@@ -9,6 +9,12 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Get('health')
+  @ApiOperation({ summary: 'Database health check' })
+  async healthCheck() {
+    return await this.authService.testDatabaseConnection();
+  }
+
   @Post('register')
   @ApiOperation({ summary: 'Đăng ký tài khoản mới' })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công' })

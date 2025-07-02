@@ -116,6 +116,32 @@ let AuthService = AuthService_1 = class AuthService {
         const hashedNewPassword = await bcrypt.hash(newPassword, 12);
         await this.userRepository.update(userId, { password: hashedNewPassword });
     }
+    async testDatabaseConnection() {
+        try {
+            this.logger.log('🔍 Testing database connection...');
+            const result = await this.userRepository.query('SELECT 1 as test');
+            this.logger.log('✅ Database query successful:', result);
+            const userCount = await this.userRepository.count();
+            this.logger.log(`👥 User count: ${userCount}`);
+            const envVars = {
+                NODE_ENV: process.env.NODE_ENV,
+                DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'MISSING',
+                JWT_SECRET: process.env.JWT_SECRET ? 'SET' : 'MISSING'
+            };
+            this.logger.log('🔐 Environment variables:', envVars);
+            return {
+                status: 'success',
+                database: 'connected',
+                userCount,
+                envVars,
+                timestamp: new Date().toISOString()
+            };
+        }
+        catch (error) {
+            this.logger.error('💥 Database test failed:', error);
+            throw error;
+        }
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = AuthService_1 = __decorate([
