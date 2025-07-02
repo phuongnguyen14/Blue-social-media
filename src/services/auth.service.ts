@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -8,6 +8,8 @@ import { RegisterDto, LoginDto, ChangePasswordDto } from '../dto/auth.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -15,41 +17,57 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<{ user: Partial<User>; access_token: string }> {
-    const { email, username, password, fullName } = registerDto;
+    try {
+      this.logger.log('🚀 Starting user registration...');
+      const { email, username, password, fullName } = registerDto;
+      
+      this.logger.log(`📧 Checking existing user for email: ${email}, username: ${username}`);
 
-    // Check if user already exists
-    const existingUser = await this.userRepository.findOne({
-      where: [{ email }, { username }],
-    });
+      // Check if user already exists
+      const existingUser = await this.userRepository.findOne({
+        where: [{ email }, { username }],
+      });
 
-    if (existingUser) {
-      throw new ConflictException('Email hoặc username đã tồn tại');
+      if (existingUser) {
+        this.logger.warn(`❌ User already exists: ${existingUser.email || existingUser.username}`);
+        throw new ConflictException('Email hoặc username đã tồn tại');
+      }
+
+      this.logger.log('🔒 Hashing password...');
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      this.logger.log('👤 Creating user entity...');
+      // Create user
+      const user = this.userRepository.create({
+        email,
+        username,
+        password: hashedPassword,
+        fullName,
+      });
+
+      this.logger.log('💾 Saving user to database...');
+      const savedUser = await this.userRepository.save(user);
+      this.logger.log(`✅ User saved successfully with ID: ${savedUser.id}`);
+
+      this.logger.log('🎫 Generating JWT token...');
+      // Generate JWT token
+      const payload = { sub: savedUser.id, email: savedUser.email, username: savedUser.username };
+      const access_token = this.jwtService.sign(payload);
+
+      // Remove password from response
+      const { password: _, ...userResponse } = savedUser;
+
+      this.logger.log('🎉 Registration completed successfully!');
+      return {
+        user: userResponse,
+        access_token,
+      };
+    } catch (error) {
+      this.logger.error('💥 Registration error:', error);
+      this.logger.error('Error stack:', error.stack);
+      throw error;
     }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user
-    const user = this.userRepository.create({
-      email,
-      username,
-      password: hashedPassword,
-      fullName,
-    });
-
-    const savedUser = await this.userRepository.save(user);
-
-    // Generate JWT token
-    const payload = { sub: savedUser.id, email: savedUser.email, username: savedUser.username };
-    const access_token = this.jwtService.sign(payload);
-
-    // Remove password from response
-    const { password: _, ...userResponse } = savedUser;
-
-    return {
-      user: userResponse,
-      access_token,
-    };
   }
 
   async login(loginDto: LoginDto): Promise<{ user: Partial<User>; access_token: string }> {

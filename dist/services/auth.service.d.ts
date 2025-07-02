@@ -5,6 +5,7 @@ import { RegisterDto, LoginDto, ChangePasswordDto } from '../dto/auth.dto';
 export declare class AuthService {
     private userRepository;
     private jwtService;
+    private readonly logger;
     constructor(userRepository: Repository<User>, jwtService: JwtService);
     register(registerDto: RegisterDto): Promise<{
         user: Partial<User>;
